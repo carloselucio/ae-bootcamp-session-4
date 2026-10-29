@@ -29,8 +29,8 @@ document.addEventListener("DOMContentLoaded", () => {
               <ul class="consultants-list">
                 ${details.consultants
                   .map(
-                    (email) =>
-                      `<li><span class="consultant-email">${email}</span><button class="delete-btn" data-capability="${name}" data-email="${email}">❌</button></li>`
+                    (consultant) =>
+                      `<li><span class="consultant-email">${consultant.email}</span><span class="consultant-level" data-level="${consultant.level}">${consultant.level}</span><button class="delete-btn" data-capability="${name}" data-email="${consultant.email}">❌</button></li>`
                   )
                   .join("")}
               </ul>
