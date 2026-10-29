@@ -28,7 +28,10 @@ capabilities = {
         "certifications": ["AWS Solutions Architect", "Azure Architect Expert"],
         "industry_verticals": ["Healthcare", "Financial Services", "Retail"],
         "capacity": 40,  # hours per week available across team
-        "consultants": ["alice.smith@slalom.com", "bob.johnson@slalom.com"]
+        "consultants": [
+            {"email": "alice.smith@slalom.com", "level": "Advanced"},
+            {"email": "bob.johnson@slalom.com", "level": "Proficient"}
+        ]
     },
     "Data Analytics": {
         "description": "Advanced data analysis, visualization, and machine learning solutions",
@@ -37,7 +40,10 @@ capabilities = {
         "certifications": ["Tableau Desktop Specialist", "Power BI Expert", "Google Analytics"],
         "industry_verticals": ["Retail", "Healthcare", "Manufacturing"],
         "capacity": 35,
-        "consultants": ["emma.davis@slalom.com", "sophia.wilson@slalom.com"]
+        "consultants": [
+            {"email": "emma.davis@slalom.com", "level": "Expert"},
+            {"email": "sophia.wilson@slalom.com", "level": "Proficient"}
+        ]
     },
     "DevOps Engineering": {
         "description": "CI/CD pipeline design, infrastructure automation, and containerization",
@@ -46,7 +52,10 @@ capabilities = {
         "certifications": ["Docker Certified Associate", "Kubernetes Admin", "Jenkins Certified"],
         "industry_verticals": ["Technology", "Financial Services"],
         "capacity": 30,
-        "consultants": ["john.brown@slalom.com", "olivia.taylor@slalom.com"]
+        "consultants": [
+            {"email": "john.brown@slalom.com", "level": "Advanced"},
+            {"email": "olivia.taylor@slalom.com", "level": "Emerging"}
+        ]
     },
     "Digital Strategy": {
         "description": "Digital transformation planning and strategic technology roadmaps",
@@ -55,7 +64,10 @@ capabilities = {
         "certifications": ["Digital Transformation Certificate", "Agile Certified Practitioner"],
         "industry_verticals": ["Healthcare", "Financial Services", "Government"],
         "capacity": 25,
-        "consultants": ["liam.anderson@slalom.com", "noah.martinez@slalom.com"]
+        "consultants": [
+            {"email": "liam.anderson@slalom.com", "level": "Expert"},
+            {"email": "noah.martinez@slalom.com", "level": "Proficient"}
+        ]
     },
     "Change Management": {
         "description": "Organizational change leadership and adoption strategies",
@@ -64,7 +76,10 @@ capabilities = {
         "certifications": ["Prosci Certified", "Lean Six Sigma Black Belt"],
         "industry_verticals": ["Healthcare", "Manufacturing", "Government"],
         "capacity": 20,
-        "consultants": ["ava.garcia@slalom.com", "mia.rodriguez@slalom.com"]
+        "consultants": [
+            {"email": "ava.garcia@slalom.com", "level": "Advanced"},
+            {"email": "mia.rodriguez@slalom.com", "level": "Proficient"}
+        ]
     },
     "UX/UI Design": {
         "description": "User experience design and digital product innovation",
@@ -73,7 +88,10 @@ capabilities = {
         "certifications": ["Adobe Certified Expert", "Google UX Design Certificate"],
         "industry_verticals": ["Retail", "Healthcare", "Technology"],
         "capacity": 30,
-        "consultants": ["amelia.lee@slalom.com", "harper.white@slalom.com"]
+        "consultants": [
+            {"email": "amelia.lee@slalom.com", "level": "Expert"},
+            {"email": "harper.white@slalom.com", "level": "Emerging"}
+        ]
     },
     "Cybersecurity": {
         "description": "Information security strategy, risk assessment, and compliance",
@@ -82,7 +100,10 @@ capabilities = {
         "certifications": ["CISSP", "CISM", "CompTIA Security+"],
         "industry_verticals": ["Financial Services", "Healthcare", "Government"],
         "capacity": 25,
-        "consultants": ["ella.clark@slalom.com", "scarlett.lewis@slalom.com"]
+        "consultants": [
+            {"email": "ella.clark@slalom.com", "level": "Advanced"},
+            {"email": "scarlett.lewis@slalom.com", "level": "Proficient"}
+        ]
     },
     "Business Intelligence": {
         "description": "Enterprise reporting, data warehousing, and business analytics",
@@ -91,7 +112,10 @@ capabilities = {
         "certifications": ["Microsoft BI Certification", "Qlik Sense Certified"],
         "industry_verticals": ["Retail", "Manufacturing", "Financial Services"],
         "capacity": 35,
-        "consultants": ["james.walker@slalom.com", "benjamin.hall@slalom.com"]
+        "consultants": [
+            {"email": "james.walker@slalom.com", "level": "Proficient"},
+            {"email": "benjamin.hall@slalom.com", "level": "Advanced"}
+        ]
     },
     "Agile Coaching": {
         "description": "Agile transformation and team coaching for scaled delivery",
@@ -100,7 +124,10 @@ capabilities = {
         "certifications": ["Certified Scrum Master", "SAFe Agilist", "ICAgile Certified"],
         "industry_verticals": ["Technology", "Financial Services", "Healthcare"],
         "capacity": 20,
-        "consultants": ["charlotte.young@slalom.com", "henry.king@slalom.com"]
+        "consultants": [
+            {"email": "charlotte.young@slalom.com", "level": "Expert"},
+            {"email": "henry.king@slalom.com", "level": "Proficient"}
+        ]
     }
 }
 
@@ -115,8 +142,16 @@ def get_capabilities():
     return capabilities
 
 
+def _find_consultant(capability: dict, email: str):
+    """Return the consultant dict with the given email, or None if not found"""
+    for consultant in capability["consultants"]:
+        if consultant["email"] == email:
+            return consultant
+    return None
+
+
 @app.post("/capabilities/{capability_name}/register")
-def register_for_capability(capability_name: str, email: str):
+def register_for_capability(capability_name: str, email: str, level: str = None):
     """Register a consultant for a capability"""
     # Validate capability exists
     if capability_name not in capabilities:
@@ -126,15 +161,25 @@ def register_for_capability(capability_name: str, email: str):
     capability = capabilities[capability_name]
 
     # Validate consultant is not already registered
-    if email in capability["consultants"]:
+    if _find_consultant(capability, email) is not None:
         raise HTTPException(
             status_code=400,
             detail="Consultant is already registered for this capability"
         )
 
+    # Default to the lowest skill level if not provided
+    skill_levels = capability["skill_levels"]
+    if level is None:
+        level = skill_levels[0]
+    elif level not in skill_levels:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid level. Must be one of: {', '.join(skill_levels)}"
+        )
+
     # Add consultant
-    capability["consultants"].append(email)
-    return {"message": f"Registered {email} for {capability_name}"}
+    capability["consultants"].append({"email": email, "level": level})
+    return {"message": f"Registered {email} for {capability_name} at level {level}"}
 
 
 @app.delete("/capabilities/{capability_name}/unregister")
@@ -148,12 +193,43 @@ def unregister_from_capability(capability_name: str, email: str):
     capability = capabilities[capability_name]
 
     # Validate consultant is registered
-    if email not in capability["consultants"]:
+    consultant = _find_consultant(capability, email)
+    if consultant is None:
         raise HTTPException(
             status_code=400,
             detail="Consultant is not registered for this capability"
         )
 
     # Remove consultant
-    capability["consultants"].remove(email)
+    capability["consultants"].remove(consultant)
     return {"message": f"Unregistered {email} from {capability_name}"}
+
+
+@app.put("/capabilities/{capability_name}/consultants/{email}/level")
+def update_consultant_level(capability_name: str, email: str, level: str):
+    """Update a consultant's skill level for a capability"""
+    # Validate capability exists
+    if capability_name not in capabilities:
+        raise HTTPException(status_code=404, detail="Capability not found")
+
+    # Get the specific capability
+    capability = capabilities[capability_name]
+
+    # Validate level is one of the capability's defined skill levels
+    if level not in capability["skill_levels"]:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid level. Must be one of: {', '.join(capability['skill_levels'])}"
+        )
+
+    # Validate consultant is registered
+    consultant = _find_consultant(capability, email)
+    if consultant is None:
+        raise HTTPException(
+            status_code=400,
+            detail="Consultant is not registered for this capability"
+        )
+
+    # Update level
+    consultant["level"] = level
+    return {"message": f"Updated {email}'s level to {level} for {capability_name}"}
